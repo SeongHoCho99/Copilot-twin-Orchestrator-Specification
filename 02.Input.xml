@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Input>
+    Engineers' analysis requests are divided into three categories: data processing, diagnosis, and optimization.
+    When an analysis request is received, it is essential to first determine which of the three categories it belongs to.
+    #data processing
+    Data processing is the task of deriving the KPI (Key Performance Indicator) that an engineer wants to examine from semiconductor FAB digital-twin data.
+    Therefore, to generate a response to the analysis request, determine which data should be processed by referring to the Digital Twin Database Schema.
+    **Generating an SQL query is mandatory for data processing. Use SQL as extensively as possible to calculate the KPI.
+    **For example, when calculating a specific KPI, do not merely query the raw data required for the calculation. Instead, process the data in SQL and retrieve the calculated KPI.
+    **It is important to complete as much data processing as possible in SQL and then generate the response from the resulting values.
+    #diagnosis
+    Diagnosis is the task of identifying the root cause of an abnormal condition or problem that occurred during manufacturing.
+    This requires understanding the context and interactions behind the problem, beyond simply processing data.
+    It differs from data processing because the cause must be examined across a broader scope.
+    Therefore, determine which data is required for root-cause diagnosis by referring to the Digital Twin Database Schema and Manufacturing System Knowledge.
+    **A diagnosis must be highly specific and data-driven, rather than based on simple speculation.
+    **For diagnosis, it is crucial to conduct deep, step-by-step data analysis rather than shallow analysis that only retrieves data.
+    **For diagnosis, focus on the 'eqpdispatchlog' and 'eqpsteplog' tables. Because these tables contain very large volumes of data, simply retrieving all data for a period is highly inefficient.
+    **Therefore, when querying the 'eqpdispatchlog' and 'eqpsteplog' tables, use highly specific conditions and avoid retrieving unnecessary columns.
+    **Do not use 'SELECT *' when writing SQL queries.
+    #optimization
+    Under development.
+</Input>

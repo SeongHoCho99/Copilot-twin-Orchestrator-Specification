@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Domain_Knowledge_Database_Schema>
+    <Domain_Knowledge_Overview>
+        Domain Knowledge provides comprehensive knowledge about the semiconductor FAB digital twin.
+        Domain Knowledge consists of three areas: Digital Twin Database Schema, Manufacturing System Knowledge, and Simulation Knowledge.
+        When an analysis request is received, refer to Domain Knowledge when generating the response.
+    </Domain_Knowledge_Overview>
+<Digital_Twin_Database_Schema>
+        The Digital Twin Database Schema is the database structure used to store semiconductor FAB digital-twin data.
+        The DBMS of the semiconductor FAB digital-twin database is MariaDB.
+        The name of the semiconductor FAB digital-twin database is 'smt_2020_llm'.
+        Tables in the digital-twin database are divided into master data and result data according to their purpose.
+        Master data is the input information required to design the semiconductor FAB digital twin.
+        Result data is historical information generated while the semiconductor FAB digital twin is running.
+        When generating a response to an analysis request, create a DQL query (SELECT) to obtain the required data. (MariaDB)
+        When creating a DQL query, refer to the table structures in the digital-twin database.
+        <route>
+            Stores the process sequence that must be performed for each product (PRODUCT_NAME).
+            <sql>
+                '''
+                CREATE TABLE `route` (
+                    `PRODUCT_NAME` VARCHAR(100) NOT NULL COMMENT 'Product name' COLLATE 'utf8mb3_general_ci',
+                    `STEP` INT(11) NOT NULL COMMENT 'Sequence number of the process performed by the product',
+                    `STEP_DESCRIPTION` VARCHAR(50) NULL DEFAULT NULL COMMENT 'Name of the process performed by the product' COLLATE 'utf8mb3_general_ci',
+                    `TOOL_GROUP` VARCHAR(50) NULL DEFAULT NULL COMMENT 'Name of the tool group capable of performing the process' COLLATE 'utf8mb3_general_ci',
+                    `PROCESSING_UNIT` VARCHAR(50) NULL DEFAULT NULL COMMENT 'Equipment loading unit used for processing' COLLATE 'utf8mb3_general_ci',
+                    `PROCESSINGTIME_DISTRIBUTION` VARCHAR(50) NULL DEFAULT NULL COMMENT 'Name of the processing-time distribution' COLLATE 'utf8mb3_general_ci',
+                    `PT_MEAN` DOUBLE NULL DEFAULT NULL COMMENT 'Mean of the processing-time distribution',
+                    `PT_OFFSET` DOUBLE NULL DEFAULT NULL COMMENT 'Offset of the processing-time distribution',
+                    `CASCADING_INTERVAL` DOUBLE NULL DEFAULT NULL COMMENT 'Interval between consecutive equipment loads',
+                    `BATCH_MINIMUM` INT(11) NULL DEFAULT NULL COMMENT 'Minimum number of wafers required to form a batch',
+                    `BATCH_MAXIMUM` INT(11) NULL DEFAULT NULL COMMENT 'Maximum number of wafers allowed in a batch',
+                    `SETUP` VARCHAR(50) NULL DEFAULT NULL COLLATE 'utf8mb3_general_ci',
+                    `SETUP_TIMING` VARCHAR(50) NULL DEFAULT NULL COLLATE 'utf8mb3_general_ci',
+                    `SETUP_DISTRIBUTION` VARCHAR(50) NULL DEFAULT NULL COLLATE 'utf8mb3_general_ci',
+                    `SETUP_TIME` DOUBLE NULL DEFAULT NULL,
+                    `ST_OFFSET` DOUBLE NULL DEFAULT NULL,
+                    `STEP_FOR_LTL_DEDICATION` INT(11) NULL DEFAULT NULL,
+                    `REWORK_PROBABILITY_IN_PERCENT` DOUBLE NULL DEFAULT NULL,
+                    `REWORK_UNIT` VARCHAR(50) NULL DEFAULT NULL COLLATE 'utf8mb3_general_ci',
+                    `STEP_FOR_REWORK` INT(11) NULL DEFAULT NULL,
+                    `PROCESSING_PROBABILITY_IN_PERCENT` INT(11) NULL DEFAULT NULL,
+                    `STEP_FOR_CRITICAL_QUEUE_TIME` INT(11) NULL DEFAULT NULL,
+                    `CQT` INT(11) NULL DEFAULT NULL,
+                    PRIMARY KEY (`PRODUCT_NAME`, `STEP`) USING BTREE,
+                    INDEX `fk_route_toolgroup` (`TOOL_GROUP`) USING BTREE,
+                    CONSTRAINT `route_ibfk_1` FOREIGN KEY (`TOOL_GROUP`) REFERENCES `smt_2020_llm`.`toolgroup` (`NAME`) ON UPDATE RESTRICT ON DELETE RESTRICT
+                )
+                COLLATE='utf8mb3_general_ci'
+                ENGINE=InnoDB
+                ROW_FORMAT=DYNAMIC
+                ;
+                '''
+            </sql>
+        </route>
+        <eqpdispatchlog>
+            The eqpdispatchlog table contains the lot-dispatch history of semiconductor FAB Tool Groups.
+            <sql>
+                '''
+                CREATE TABLE `eqpdispatchlog` (
+                    `TOOLGROUP_NAME` VARCHAR(50) NULL DEFAULT NULL COMMENT 'ToolGroup name' COLLATE 'utf8mb3_general_ci',
+                    `DISPATCHED_TIME` DATETIME NULL DEFAULT NULL COMMENT 'Time when the ToolGroup attempted dispatching',
+                    `TOTAL_LOT_COUNT` SMALLINT(6) NULL DEFAULT NULL COMMENT 'Total number of lots requiring processing by equipment in the ToolGroup',
+                    `WAITING_LOT_COUNT` SMALLINT(6) NULL DEFAULT NULL COMMENT 'Total number of lots waiting for dispatch',
+                    `LOADING_LOT_COUNT` SMALLINT(6) NULL DEFAULT NULL COMMENT 'Total number of lots being loaded onto equipment',
+                    `UNLOADING_LOT_COUNT` SMALLINT(6) NULL DEFAULT NULL COMMENT 'Total number of lots being unloaded from equipment',
+                    `DISPATCHED_LOT_COUNT` SMALLINT(6) NULL DEFAULT NULL COMMENT 'Total number of lots successfully dispatched',
+                    `PROCESSING_LOT_COUNT` SMALLINT(6) NULL DEFAULT NULL COMMENT 'Total number of lots being processed',
+                    `IDLE_EQP_COUNT` SMALLINT(6) NULL DEFAULT NULL COMMENT 'Total number of idle equipment units in the ToolGroup',
+                    `RESERVED_EQP_COUNT` SMALLINT(6) NULL DEFAULT NULL COMMENT 'Total number of reserved equipment units in the ToolGroup',
+                    `BUSY_EQP_COUNT` SMALLINT(6) NULL DEFAULT NULL COMMENT 'Total number of processing equipment units in the ToolGroup',
+                    `PM_EQP_COUNT` SMALLINT(6) NULL DEFAULT NULL COMMENT 'Total number of equipment units in PM status in the ToolGroup',
+                    `BREAKDOWN_EQP_COUNT` SMALLINT(6) NULL DEFAULT NULL COMMENT 'Total number of equipment units in breakdown status in the ToolGroup',
+                    `SETUP_EQP_COUNT` SMALLINT(6) NULL DEFAULT NULL COMMENT 'Total number of equipment units in setup status in the ToolGroup',
+                    INDEX `fk_eqpdispatchlog_toolgroup_name` (`TOOLGROUP_NAME`) USING BTREE,
+                    CONSTRAINT `fk_toolgroup_name` FOREIGN KEY (`TOOLGROUP_NAME`) REFERENCES `smt_2020_llm_db`.`toolgroup` (`NAME`) ON UPDATE RESTRICT ON DELETE RESTRICT
+                )
+                COLLATE='utf8mb3_general_ci'
+                ENGINE=InnoDB
+                ;
+                '''
+            </sql>
+        </eqpdispatchlog>
+        <eqpsteplog>
+            The eqpsteplog table contains the process-execution history of semiconductor FAB production equipment.
+            <sql>
+                '''
+                CREATE TABLE `eqpsteplog` (
+                    `EQP_NAME` VARCHAR(50) NOT NULL COMMENT 'EQP name' COLLATE 'utf8mb3_general_ci',
+                    `TOOLGROUP_NAME` VARCHAR(50) NULL DEFAULT NULL COMMENT 'ToolGroup name of the EQP' COLLATE 'utf8mb3_general_ci',
+                    `TOOL_TYPE` VARCHAR(50) NULL DEFAULT NULL COMMENT 'EQP type' COLLATE 'utf8mb3_general_ci',
+                    `STEP` SMALLINT(6) NULL DEFAULT NULL COMMENT 'Sequence of the process within the product process flow',
+                    `STEP_DESCRIPTION` VARCHAR(50) NULL DEFAULT NULL COMMENT 'Name of the process to be performed' COLLATE 'utf8mb3_general_ci',
+                    `LOT_NAME` VARCHAR(50) NOT NULL COMMENT 'Name of the lot to be processed' COLLATE 'utf8mb3_general_ci',
+                    `PRODUCT_NAME` VARCHAR(50) NULL DEFAULT NULL COMMENT 'Product name of the lot to be processed' COLLATE 'utf8mb3_general_ci',
+                    `WAFER_COUNT` SMALLINT(6) NULL DEFAULT NULL COMMENT 'Number of wafers in the lot to be processed',
+                    `ENTERED_TIME` DATETIME NULL DEFAULT NULL COMMENT 'Time when the lot entered the queue of the EQP ToolGroup',
+                    `DISPATCHED_TIME` DATETIME NULL DEFAULT NULL COMMENT 'Time when the ToolGroup dispatched the lot to the EQP',
+                    `LOADED_TIME` DATETIME NOT NULL COMMENT 'Time when the EQP loaded the lot',
+                    `PROCESS_START_TIME` DATETIME NULL DEFAULT NULL COMMENT 'Time when EQP processing started',
+                    `PROCESS_FINISH_TIME` DATETIME NULL DEFAULT NULL COMMENT 'Time when EQP processing finished',
+                    `UNLOADED_TIME` DATETIME NULL DEFAULT NULL COMMENT 'Time when the EQP unloaded the lot',
+                    PRIMARY KEY (`EQP_NAME`, `LOT_NAME`, `LOADED_TIME`) USING BTREE,
+                    INDEX `fk_eqpsteplog_toolgroup_name` (`TOOLGROUP_NAME`) USING BTREE,
+                    CONSTRAINT `fk_eqpsteplog_eqp_name` FOREIGN KEY (`EQP_NAME`) REFERENCES `smt_2020_llm_db`.`equipment` (`NAME`) ON UPDATE RESTRICT ON DELETE RESTRICT,
+                    CONSTRAINT `fk_eqpsteplog_toolgroup_name` FOREIGN KEY (`TOOLGROUP_NAME`) REFERENCES `smt_2020_llm_db`.`toolgroup` (`NAME`) ON UPDATE RESTRICT ON DELETE RESTRICT
+                )
+                COLLATE='utf8mb3_general_ci'
+                ENGINE=InnoDB
+                ;
+                '''
+            </sql>
+        </eqpsteplog>
+        <queuetimelog>
+            The queuetimelog table contains the history of lots passing through constrained intervals between processes in the semiconductor FAB.
+            <sql>
+                '''
+                CREATE TABLE `queuetimelog` (
+                    `LOT_NAME` VARCHAR(50) NOT NULL COMMENT 'Lot name' COLLATE 'utf8mb3_general_ci',
+                    `PRODUCT_NAME` VARCHAR(50) NULL DEFAULT NULL COMMENT 'Product name of the lot' COLLATE 'utf8mb3_general_ci',
+                    `START_STEP_NUMBER` INT(11) NOT NULL COMMENT 'Sequence number of the start process',
+                    `END_STEP_NUMBER` INT(11) NOT NULL COMMENT 'Sequence number of the end process',
+                    `START_STEP_DESCRIPTION` VARCHAR(50) NULL DEFAULT NULL COMMENT 'Name of the start process' COLLATE 'utf8mb3_general_ci',
+                    `END_STEP_DESCRIPTION` VARCHAR(50) NULL DEFAULT NULL COMMENT 'Name of the end process' COLLATE 'utf8mb3_general_ci',
+                    `START_EQP_NAME` VARCHAR(50) NULL DEFAULT NULL COMMENT 'Name of the EQP that performed the start process' COLLATE 'utf8mb3_general_ci',
+                    `END_EQP_NAME` VARCHAR(50) NULL DEFAULT NULL COMMENT 'Name of the EQP that performed the end process' COLLATE 'utf8mb3_general_ci',
+                    `START_DATETIME` DATETIME NULL DEFAULT NULL COMMENT 'Time when the lot exited the start process (Queue Time start time)',
+                    `END_DATETIME` DATETIME NULL DEFAULT NULL COMMENT 'Time when the lot entered the end process (Queue Time end time)',
+                    `QUEUE_TIME` FLOAT NULL DEFAULT NULL COMMENT 'Queue Time of the lot (minutes)',
+                    `QUEUE_LIMIT_TIME` INT(11) NULL DEFAULT NULL COMMENT 'Queue Time limit for the interval (minutes)',
+                    `IS_BREACH` TINYINT(4) NULL DEFAULT NULL COMMENT 'Whether the Queue Time constraint was violated (0 or 1)',
+                    PRIMARY KEY (`LOT_NAME`, `START_STEP_NUMBER`, `END_STEP_NUMBER`) USING BTREE
+                )
+                COLLATE='utf8mb3_general_ci'
+                ENGINE=InnoDB
+                ;
+                '''
+            </sql>
+        </queuetimelog>
+        <pmlog>
+            The pmlog table contains preventive-maintenance history for production equipment in the semiconductor FAB.
+            <sql>
+                '''
+                CREATE TABLE `pmlog` (
+                    `EQP_NAME` VARCHAR(50) NULL DEFAULT NULL COMMENT 'EQP name' COLLATE 'utf8mb3_general_ci',
+                    `START_TIME` DATETIME NULL DEFAULT NULL COMMENT 'Preventive-maintenance start time',
+                    `END_TIME` DATETIME NULL DEFAULT NULL COMMENT 'Preventive-maintenance end time',
+                    `PM_TIME` DOUBLE NULL DEFAULT NULL COMMENT 'Elapsed preventive-maintenance time (minutes)',
+                    INDEX `fk_pmlog_eqp_name` (`EQP_NAME`) USING BTREE,
+                    CONSTRAINT `fk_pmlog_eqp_name` FOREIGN KEY (`EQP_NAME`) REFERENCES `smt_2020_llm`.`equipment` (`NAME`) ON UPDATE RESTRICT ON DELETE RESTRICT
+                )
+                COLLATE='utf8mb3_general_ci'
+                ENGINE=InnoDB
+                ;
+                '''
+            </sql>
+        </pmlog>
+        <breakdownlog>
+            The breakdownlog table contains breakdown history for production equipment in the semiconductor FAB.
+            <sql>
+                '''
+                CREATE TABLE `breakdownlog` (
+                    `EQP_NAME` VARCHAR(50) NULL DEFAULT NULL COMMENT 'EQP name' COLLATE 'utf8mb3_general_ci',
+                    `START_TIME` DATETIME NULL DEFAULT NULL COMMENT 'Breakdown occurrence time',
+                    `END_TIME` DATETIME NULL DEFAULT NULL COMMENT 'Repair completion time',
+                    `BREAKDOWN_TIME` DOUBLE NULL DEFAULT NULL COMMENT 'Elapsed breakdown time (minutes)',
+                    INDEX `fk_breakdownlog_eqp_name` (`EQP_NAME`) USING BTREE,
+                    CONSTRAINT `fk_breakdownlog_eqp_name` FOREIGN KEY (`EQP_NAME`) REFERENCES `smt_2020_llm`.`equipment` (`NAME`) ON UPDATE RESTRICT ON DELETE RESTRICT
+                )
+                COLLATE='utf8mb3_general_ci'
+                ENGINE=InnoDB
+                ;
+                '''
+            </sql>
+        </breakdownlog>
+        <setuplog>
+            The setuplog table contains setup history for production equipment in the semiconductor FAB.
+            <sql>
+                '''
+                CREATE TABLE `setuplog` (
+                `EQP_NAME` VARCHAR(50) NULL DEFAULT NULL COMMENT 'EQP name' COLLATE 'utf8mb3_general_ci',
+                `START_TIME` DATETIME NULL DEFAULT NULL COMMENT 'SETUP start time',
+                `END_TIME` DATETIME NULL DEFAULT NULL COMMENT 'SETUP end time',
+                `SETUP_TIME` DOUBLE NULL DEFAULT NULL COMMENT 'Elapsed SETUP time (minutes)',
+                INDEX `fk_setuplog_eqp_name` (`EQP_NAME`) USING BTREE,
+                CONSTRAINT `fk_setuplog_eqp_name` FOREIGN KEY (`EQP_NAME`) REFERENCES `smt_2020_llm_db`.`equipment` (`NAME`) ON UPDATE RESTRICT ON DELETE RESTRICT
+                )
+                COLLATE='utf8mb3_general_ci'
+                ENGINE=InnoDB
+                ;
+                '''
+            </sql>
+        </setuplog>
+    </Digital_Twin_Database_Schema>
+</Domain_Knowledge_Database_Schema>

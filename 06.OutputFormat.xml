@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OutputFormat>
+    Identify the information or result format that the user wants to obtain from the analysis request.
+    Use this context to determine the appropriate OutputFormat.
+    When generating the final response to an analysis request, take this OutputFormat into account.
+    The purpose of OutputFormat is to present the response so that the user can easily understand the requested analysis result.
+</OutputFormat>

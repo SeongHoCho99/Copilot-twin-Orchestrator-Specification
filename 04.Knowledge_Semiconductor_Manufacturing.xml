@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Domain_Knowledge_Manufacturing_System_Knowledge>
+    <Domain_Knowledge_Overview>
+        Domain Knowledge provides comprehensive knowledge about the semiconductor FAB digital twin.
+        Domain Knowledge consists of three areas: Digital Twin Database Schema, Manufacturing System Knowledge, and Simulation Knowledge.
+        When an analysis request is received, refer to Domain Knowledge when generating the response.
+    </Domain_Knowledge_Overview>
+<Manufacturing_System_Knowledge>
+        Manufacturing System Knowledge provides the knowledge needed to understand the semiconductor FAB system as a whole.
+        <Process>
+            In a semiconductor FAB manufacturing system, a lot is introduced, passes through hundreds of processes, and exits as a finished product.
+            Each lot is assigned a product name (PRODUCT_NAME).
+            Based on the lot's product name, the sequence of processes required to manufacture the finished product can be checked in the 'route' table.
+            There are 11 major process types, divided into eight manufacturing processes and three metrology processes.
+            The eight manufacturing processes are 'Diffusion', 'Wet_Etch', 'Dry_Etch', 'Planar', 'Litho', 'Dielectric', 'TF', and 'Implant'.
+            The three metrology processes are 'Litho_Met', 'TF_Met', and 'Def_Met'.
+            A lot goes through several procedures before being processed by equipment.
+            1) Enter: The lot is registered in the queue of the Tool Group that performs the required process. ('ENTERED_TIME' in the 'eqpsteplog' table)
+            2) Dispatch: Dispatching is performed at the **Tool Group level**. Lots waiting in the Tool Group queue are prioritized and selected, and the selected lot is assigned to equipment. ('DISPATCHED_TIME' in the 'eqpsteplog' table)
+            3) Load: The selected lot is loaded onto equipment. ('PROCESS_START_TIME' in the 'eqpsteplog' table)
+            4) Process Start: Processing of the lot starts on the equipment. ('PROCESS_FINISH_TIME' in the 'eqpsteplog' table)
+            5) Process Finish: Processing of the lot finishes on the equipment. ('UNLOADED_TIME' in the 'eqpsteplog' table)
+            6) Unload: The lot is unloaded from the equipment. Steps 1 through 6 are repeated.
+            * If many lots are waiting in the Tool Group queue or the equipment has insufficient available ports, a delay may occur between Enter and Dispatch.
+            * Even after a lot is successfully dispatched and occupies one of the equipment ports, a delay may occur between Dispatch and Load because other lots that were dispatched earlier are processed first.
+            Specific process names can be found in columns related to 'STEP_DESCRIPTION'.
+            Numbers contained in 'STEP_DESCRIPTION'-related column values have no relationship to the process sequence.
+            For example, if a process name is '123_Diffusion', 123 does not indicate the process sequence.
+            To find data related to a specific process, check whether the process name is included in the value of a 'STEP_DESCRIPTION'-related column.
+            For example, to find data related to a 'Diffusion' process, check whether the value of the relevant 'STEP_DESCRIPTION' column contains 'Diffusion'.
+            To find data based on process sequence, use values in columns related to 'STEP' or 'STEP_NUMBER'.
+            The process history performed from lot entry through lot exit can be checked in the 'eqpsteplog' table.
+            To retrieve the history of processes performed on a lot by equipment, refer to the 'eqpsteplog' table.
+            <Equipment>
+                Equipment refers to a physical tool that performs processes on lots.
+                Each equipment unit has **one or four ports**.
+                A port serves as the entrance and exit of equipment and temporarily holds a box containing a lot (FOUP, front-opening unified pod).
+                COMMIT and COMPLETE equipment have one port, while TABLE, CASCADING, and BATCH equipment have four ports.
+                When a lot waiting in a Tool Group queue is successfully dispatched and assigned to equipment, it occupies one of the equipment ports.
+                **If other lots arrived earlier at other ports of the same equipment, those earlier-arriving lots are processed first.
+            </Equipment>
+            <Tool_Group>
+                A Tool Group is an equipment group: a unit that groups equipment with similar manufacturing characteristics in the semiconductor FAB manufacturing system.
+                Equipment requests **dispatching** from its Tool Group in order to perform a process.
+                The Tool Group attempts dispatching. During this process, it selects a lot for processing from among the lots waiting in the Tool Group queue.
+                The selected lot is assigned to equipment.
+                Therefore, lot dispatching for process execution is performed at the **Tool Group level**.
+                This dispatch history can be checked in the 'eqpdispatchlog' table.
+            </Tool_Group>
+            <Tool_Type>
+                Equipment is divided into five types according to its operating characteristics. (TOOL_TYPE)
+                1) COMMIT, 2) COMPLETE, 3) TABLE, 4) CASCADING, 5) BATCH.
+                In the 'eqpsteplog' table, the 'TOOL_TYPE' column identifies the type of equipment on which each lot was processed. Its value is one of COMMIT, COMPLETE, TABLE, CASCADING, or BATCH.
+                <COMMIT_Type>
+                    COMMIT equipment is where lots are first introduced into the semiconductor FAB manufacturing system.
+                    After entering through COMMIT-type equipment, every lot undergoes all assigned processes on TABLE, CASCADING, and BATCH equipment.
+                    In other words, COMMIT-type equipment is the first equipment through which a lot enters.
+                </COMMIT_Type>
+                <COMPLETE_Type>
+                    A lot that has completed all processes enters COMPLETE-type equipment and then finishes production.
+                    In other words, COMPLETE-type equipment is the final equipment through which a lot passes.
+                    Until a lot enters COMPLETE-type equipment, it is processed according to the process flow of its assigned product.
+                </COMPLETE_Type>
+                Equipment that performs processes is classified as TABLE, CASCADING, or BATCH according to its loading method.
+                <TABLE_Type>
+                    TABLE-type equipment can accept only one lot while idle.
+                    No other lot can be loaded while TABLE-type equipment is processing.
+                    Another lot can be loaded only after the TABLE-type equipment completes processing and becomes idle.
+                    Therefore, TABLE-type equipment processes only one lot at a time.
+                </TABLE_Type>
+                <CASCADING_Type>
+                    CASCADING-type equipment can accept another lot even while processing is in progress.
+                    Even when CASCADING-type equipment is processing another lot, an additional lot can enter and be processed.
+                    Therefore, CASCADING-type equipment can process lots in an in-line manner.
+                </CASCADING_Type>
+                <BATCH_Type>
+                    Finally, BATCH-type equipment can load multiple lots simultaneously while idle.
+                    The group of lots loaded together is called a Batch.
+                    BATCH-type equipment performs Diffusion processes.
+                    To verify this, check whether the 'STEP_DESCRIPTION' column in the 'eqpsteplog' table contains the string 'Diffusion'.
+                    If the STEP_DESCIRPTION column contains 'Diffusion', the corresponding equipment can be identified as BATCH-type equipment.
+                    Because multiple lots are loaded into BATCH-type equipment simultaneously, their Process Start Time values in the 'eqpsteplog' table are identical.
+                    To identify a Batch loaded into BATCH-type equipment, find records for a specific EQP in the 'eqpsteplog' table that share the same 'PROCESS_START_TIME' value.
+                    No other Batch can be loaded while BATCH-type equipment is processing.
+                    Another Batch can be loaded only after the BATCH-type equipment completes processing and becomes idle.
+                    BATCH-type equipment is therefore similar to TABLE-type equipment, except that its loading unit is a Batch.
+                    Because of these BATCH characteristics, delays in forming a Batch can also delay equipment loading and become a **cause of long waiting times**.
+                </BATCH_Type>
+            </Tool_Type>
+        </Process>
+        <Operation>
+            <Utilization_Rate>
+                Equipment in the semiconductor FAB manufacturing system performs processes on lots.
+                Equipment utilization rate is the ratio of the total time that equipment performs processing during a specified period.
+                For example, if equipment 'EQP_A' processes three lots for 2 hours, 3 hours, and 1 hour during a 24-hour period, it operates for 6 hours in total (2 + 3 + 1), so its utilization rate is 6 / 24 * 100 = 25%.
+                Processing time can be calculated in the 'eqpsteplog' table as ('PROCESS_FINISH_TIME' - 'PROCESS_START_TIME').
+                For 'CASCADING'-type equipment, processing intervals may overlap, so its utilization rate must be calculated using a separate method.
+            </Utilization_Rate>
+            <Queue_Time>
+                Constrained intervals may exist between processes in a semiconductor FAB manufacturing system.
+                The constraint requires that a lot's Queue Time between processes not exceed the specified limit.
+                Queue Time is the elapsed time from when a lot exits one process until it enters another process.
+                The process the lot exits (the origin) is called the Start Step, and the process it enters (the destination) is called the End Step.
+                Therefore, a lot's Queue Time is the elapsed time from its exit from the Start Step (Process Finish Time) to its entry into the End Step (Process Start Time).
+                In a Queue Time constraint interval, the End Step may immediately follow the Start Step, or other steps may exist between the Start Step and End Step.
+                If the 'IS_BREACH' value in a row of the 'queuetimelog' table is 1, the Queue Time constraint was violated.
+                If the 'IS_BREACH' value in a row of the 'queuetimelog' table is 0, the Queue Time constraint was satisfied.
+                The two main causes of Queue Time constraint violations are described below.
+                Other possible causes include equipment PM, breakdown, or setup.
+                The most important step in analyzing a Queue Time constraint violation is to carefully examine the target lot's process history within the constrained interval.
+                The fundamental reason for a Queue Time constraint violation is that the target lot was delayed in a particular segment of the constrained interval.
+                Therefore, calculate **which time segment in the target lot's process history accounts for the largest proportion of the Queue Time delay**.
+                Then identify the cause of the segment with the greatest delay.
+                For example, assume that the target lot's process history is examined for a Queue Time constraint-violation record.
+                When the target lot's records are reviewed in process order, suppose the difference between 'ENTERED_TIME' and 'DISPATCHED_TIME' in one process record is found to account for the largest share of the Queue Time.
+                To identify the cause, examine the Tool Group's dispatch history for **20 minutes** starting from the time the target lot entered the Tool Group queue.
+                This makes it possible to determine whether a dispatch delay could have occurred by examining the counts of equipment and lots by status in the Tool Group at the time the lot entered the queue.
+                Because the 'eqpdispatchlog' table contains a very large volume of data, retrieving more than 20 minutes of history can create DB-server load and is highly inefficient.
+                Therefore, for Queue Time root-cause diagnosis, first determine which time segment in the target lot's process history accounts for the largest share of the delay.
+                The relevant time segments are ['UNLOADED_TIME' → 'ENTERED_TIME'] OR ['ENTERED_TIME' → 'DISPATCHED_TIME'] OR ['DISPATCHED_TIME' → 'LOADED_TIME'] OR ['LOADED_TIME' → 'PROCESS_START_TIME'].
+                The ['PROCESS_START_TIME' → 'PROCESS_FINISH_TIME'] and ['PROCESS_FINISH_TIME' → 'UNLOADED_TIME'] segments are not segments in which a delay can occur.
+                Therefore, even if a long time elapses in those segments, it is not a cause of a Queue Time constraint violation.
+                When diagnosing the cause of a Queue Time issue, identify the time segment that contributed most to the constraint violation and determine its cause.
+                A clear diagnosis based on historical records is required, not a discussion of guesses or possibilities.
+                <Capa_Over>
+                    Capa Over occurs when dispatch or loading is delayed between the target lot exiting the Start Step and entering the End Step because many lots are waiting for processing or too few equipment units are idle.
+                    If loading is delayed, entry into the equipment that performs the End Step is also delayed, which can lengthen Queue Time.
+                </Capa_Over>
+                <Batch_Over>
+                    Batch Over occurs when a **Diffusion** process exists between the target lot exiting the Start Step and entering the End Step, and formation of the required Batch is delayed.
+                    Even if the target lot enters the queue of the Tool Group that performs Diffusion first, Batch formation may be delayed because the other lots needed for the Batch have not yet entered the Tool Group queue.
+                    Conversely, the other lots needed for the Batch may already be in the Tool Group queue while the target lot has not yet entered, which can also delay Batch formation.
+                    Delayed Batch formation can lengthen Queue Time.
+                    If Batch Over is suspected, review the difference between the time the lots forming the Batch entered the Diffusion Tool Group queue (ENTERED_TIME) and the time the Diffusion Tool Group dispatched them (DISPATCHED_TIME).
+                </Batch_Over>
+                **Finally, when diagnosing a Queue Time issue, do not identify a cause solely from the possibility of either major violation type described above without conducting a proper analysis.
+                Begin by checking the target lot's process history within the constrained interval, determine in which time segment the delay occurred, and identify the specific cause of that delay.
+                To identify the cause clearly, obtain data using SQL queries that retrieve only the minimum necessary data. (DB-server load concern)
+            </Queue_Time>
+            <PM>
+                Equipment undergoes preventive maintenance for specified periods to remain in optimal condition for processing.
+                The key point is that equipment cannot perform processing while preventive maintenance is in progress.
+                Therefore, if the equipment required for the next process is under preventive maintenance, the lot must wait and its Queue Time may increase.
+                Equipment PM history can be checked in the 'pmlog' table.
+            </PM>
+            <Breakdown>
+                Equipment may break down because of unexpected defects.
+                The key point is that equipment cannot perform processing during a breakdown period.
+                Therefore, if the equipment required for the next process is in breakdown status, the lot must wait and its Queue Time may increase.
+                However, equipment breakdowns are rare, so they may not be a major factor in Queue Time Over issues.
+                Equipment breakdown history can be checked in the 'breakdownlog' table.
+            </Breakdown>
+            <Setup>
+                Immediately after processing ends (UNLOADED_TIME), equipment may perform a Setup operation to change its configuration for the next process.
+                The key point is that a lot cannot be loaded while the equipment is performing Setup, which delays LOADED_TIME.
+                Therefore, if the difference between DISPATCHED_TIME and LOADED_TIME is large in the target lot's 'eqpsteplog' history, Queue Time may increase.
+                However, Setup operations are usually not very long, so they may not have a major effect on Queue Time Over issues.
+                Equipment setup history can be checked in the 'setuplog' table.
+                Equipment's
+            </Setup>
+        </Operation>
+    </Manufacturing_System_Knowledge>
+</Domain_Knowledge_Manufacturing_System_Knowledge>

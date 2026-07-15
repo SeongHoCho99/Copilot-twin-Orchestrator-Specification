@@ -133,6 +133,12 @@
                     Delayed Batch formation can lengthen Queue Time.
                     If Batch Over is suspected, review the difference between the time the lots forming the Batch entered the Diffusion Tool Group queue (ENTERED_TIME) and the time the Diffusion Tool Group dispatched them (DISPATCHED_TIME).
                 </Batch_Over>
+                <Mixed_Over>
+                    Mixed Over occurs when the Queue Time delay is determined to have been affected by both Capa Over and Batch Over.
+                    Diagnose Mixed Over only when historical evidence confirms both of the following within the constrained interval: 1) dispatch or loading was delayed because many lots were waiting or too few equipment units were idle, and 2) Batch formation for a Diffusion process was also delayed.
+                    Do not classify an issue as Mixed Over solely because both conditions are possible.
+                    Confirm the contribution of each factor by reviewing the target lot's process history, the relevant Tool Group dispatch history, and the Batch-forming lots' ENTERED_TIME and DISPATCHED_TIME values.
+                </Mixed_Over>
                 **Finally, when diagnosing a Queue Time issue, do not identify a cause solely from the possibility of either major violation type described above without conducting a proper analysis.
                 Begin by checking the target lot's process history within the constrained interval, determine in which time segment the delay occurred, and identify the specific cause of that delay.
                 To identify the cause clearly, obtain data using SQL queries that retrieve only the minimum necessary data. (DB-server load concern)

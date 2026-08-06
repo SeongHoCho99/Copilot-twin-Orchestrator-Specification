@@ -64,4 +64,11 @@ The specification is provided as both a complete XML file and a set of modular X
 
 ## Manuscript Information
 
-Additional information about the associated manuscript, including its publication status, citation details, and related links, will be added in a future update.
+
+## Manuscript Information
+
+This repository is associated with the following publication:
+
+**Task-Based Feasibility Evaluation of an LLM-Enhanced Digital Twin for Semiconductor Manufacturing Analytics**
+
+Published in [*Computers & Industrial Engineering*](https://doi.org/10.1016/j.cie.2026.112281).

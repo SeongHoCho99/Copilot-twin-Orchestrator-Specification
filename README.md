@@ -65,6 +65,6 @@ The specification is provided as both a complete XML file and a set of modular X
 ## Manuscript Information
 
 **Task-Based Feasibility Evaluation of an LLM-Enhanced Digital Twin for Semiconductor Manufacturing Analytics**
-- <ins><strong>Seongho Cho</strong></ins>, <em>Gihan Lee</em>, <em>Sangchul Park</em><sup>*</sup>
+- <strong><a href="https://sites.google.com/view/seonghocho/home">Seongho Cho</a></strong>, <em>Gihan Lee</em>, <em>Sangchul Park</em><sup>*</sup>
 
 - Published in [*Computers & Industrial Engineering*](https://doi.org/10.1016/j.cie.2026.112281).
